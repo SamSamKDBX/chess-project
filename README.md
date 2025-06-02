@@ -1,2 +1,2 @@
-# chess-project
-Jeu d'échec en C# avec Unity
+# Jeu d'échec Unity (C#)
+Le jeu est encore en cours de développement.
