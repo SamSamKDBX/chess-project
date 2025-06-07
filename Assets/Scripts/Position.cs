@@ -39,11 +39,7 @@ public class Position
 
     public bool equals(Position p)
     {
-        if (this.x == p.getX() && this.y == p.getY())
-        {
-            return true;
-        }
-        return false;
+        return this.x == p.getX() && this.y == p.getY();
     }
 
     public int distanceX(Position p)

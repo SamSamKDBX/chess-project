@@ -64,19 +64,19 @@ public class ChessBoard : MonoBehaviour
                 tempPiece = this.chessBoard[y, x];
                 if (y == 1)
                 {
-                    tempPiece.setAttributes("Pawn", "White", x, y, this);
+                    tempPiece.setAttributes("Pawn", "Black", x, y, this);
                 }
                 else if (y == 6)
                 {
-                    tempPiece.setAttributes("Pawn", "Black", x, y, this);
+                    tempPiece.setAttributes("Pawn", "White", x, y, this);
                 }
                 else if (y == 0)
                 {
-                    tempPiece.setAttributes(getPieceName(x), "White", x, y, this);
+                    tempPiece.setAttributes(getPieceName(x), "Black", x, y, this);
                 }
                 else if (y == 7)
                 {
-                    tempPiece.setAttributes(getPieceName(x), "Black", x, y, this);
+                    tempPiece.setAttributes(getPieceName(x), "White", x, y, this);
                 }
                 else
                 {
@@ -186,7 +186,7 @@ public class ChessBoard : MonoBehaviour
         {
             return true;
         }
-        // print("position out of board");
+        print("position out of board");
         return false;
     }
 
