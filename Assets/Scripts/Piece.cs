@@ -15,6 +15,7 @@ public class Piece : MonoBehaviour
     private ChessBoard chessBoard;
     private bool isClickedVar;
     private int directionY;
+    private Piece dangerousPiece;
     private readonly string[] directions = {
             "Bottom",
             "Right",
@@ -116,6 +117,11 @@ public class Piece : MonoBehaviour
         if (!chessBoard.isNotOut(move.getPosition())) { print("target is out"); return false; }
         if (!this.isWayClear(move, chessBoard)) { print("way is not clear"); return false; }
         if (willPutKingInCheck(move, chessBoard)) { print("Cannot put king in check"); return false; }
+        if (isCheck(chessBoard.getKing(this.color).getPosition(), this.chessBoard) && isNotSavingKing(move))
+        {
+            print("save the king before !");
+            return false;
+        }
         switch (this.Name)
         {
             case "King": return this.isKingLegalMove(move);
@@ -130,34 +136,74 @@ public class Piece : MonoBehaviour
         }
     }
 
-    private bool willPutKingInCheck(Move move, ChessBoard chessBoard)
+    private bool isNotSavingKing(Move move)
     {
-        // TODO
-        int indexDirections = 0;
-        Position foundPiecePos = this.position.copy();
-        Piece foundPiece;
-        while (indexDirections < 8)
+        // TODO ca marche pas encore
+        string dangerousPieceName = dangerousPiece.getName();
+        if (move.getPosition().equals(this.dangerousPiece.getPosition())) { print("eat it is a good idea"); return false; }
+        if (dangerousPieceName == "Knight" ||
+            dangerousPieceName == "Pawn" ||
+            dangerousPieceName == "Rook" && isBlockingRook(move.getPosition()) ||
+            dangerousPieceName == "Bishop" && isBlockingBishop(move.getPosition()) ||
+            dangerousPieceName == "Queen" && (isBlockingRook(move.getPosition()) || isBlockingBishop(move.getPosition())))
         {
-            chessBoard.findNextPiece(this.directions[indexDirections], foundPiecePos);
-            foundPiece = chessBoard.getPiece(foundPiecePos);
-            if (foundPiece != null && foundPiece == chessBoard.getKing(this.color)) break;
-            indexDirections++;
-        }
-        string directionToVerify = findOpposite(this.directions[indexDirections]);
-        chessBoard.findNextPiece(directionToVerify, foundPiecePos);
-        foundPiece = chessBoard.getPiece(foundPiecePos);
-        if (foundPiece != null && foundPiece.getColor() != this.color && foundPiece.isDangerous(directionToVerify))
-        {
-            // le roi est en danger si on bouge la piece actuelle
+            print("Not Saving the King");
             return true;
         }
         return false;
     }
 
-    private bool isDangerous(string directionToVerify)
+    private bool isBlockingBishop(Position position)
+    {
+        Position kingPos = chessBoard.getKing(this.color).getPosition();
+        if (position.distanceX(kingPos) == position.distanceY(kingPos))
+            return true;
+        return false;
+    }
+
+    private bool isBlockingRook(Position position)
+    {
+        if (position.getX() == chessBoard.getKing(this.color).getX() && position.getX() == dangerousPiece.getX() ||
+            position.getY() == chessBoard.getKing(this.color).getY() && position.getY() == dangerousPiece.getY())
+            return true;
+        return false;
+    }
+
+    private bool willPutKingInCheck(Move move, ChessBoard chessBoard)
     {
         // TODO
-        throw new NotImplementedException();
+        int indexDirections = 0;
+        Position foundPiecePos;
+        Piece foundPiece = null;
+        while (indexDirections < 8)
+        {
+            foundPiecePos = this.position.copy();
+            chessBoard.findNextPiece(this.directions[indexDirections], foundPiecePos);
+            foundPiece = chessBoard.getPiece(foundPiecePos);
+            if (foundPiece != null && foundPiece == chessBoard.getKing(this.color)) break;
+            indexDirections++;
+        }
+        if (foundPiece != chessBoard.getKing(this.color)) { print("pas besoin de la suite"); return false; }
+        string directionToVerify = findOpposite(this.directions[indexDirections]);
+        foundPiecePos = this.position.copy();
+        chessBoard.findNextPiece(directionToVerify, foundPiecePos);
+        foundPiece = chessBoard.getPiece(foundPiecePos);
+        if (foundPiece != null && foundPiece.getColor() != this.color && foundPiece.isDangerous(directionToVerify))
+        {
+            // le roi est en danger si on bouge "this"
+            print("Cannot put the king in check");
+            return true;
+        }
+        print("The king is fine");
+        return false;
+    }
+
+    private bool isDangerous(string directionToVerify)
+    {
+        if (this.Name == "Queen") return true;
+        if (this.Name == "Bishop" && directionToVerify.EndsWith("Corner")) return true;
+        if (this.Name == "Rook" && !directionToVerify.EndsWith("Corner")) return true;
+        return false;
     }
 
     private string findOpposite(string direction)
@@ -176,7 +222,6 @@ public class Piece : MonoBehaviour
         }
     }
 
-    // pas encore vérifié
     private bool isWayClear(Move move, ChessBoard chessBoard)
     {
         if (this.Name == "Knight")
@@ -265,7 +310,7 @@ public class Piece : MonoBehaviour
         // on ne se deplace que d'une case
         if (move.getPosition().distanceX(this.position) <= 1
             && move.getPosition().distanceY(this.position) <= 1
-            && !this.isCheck(move, chessBoard))
+            && !this.isCheck(move.getPosition(), chessBoard))
         {
             // faire le roque et isCheck ////////////////////////////////////////////////////////////////////
             return true;
@@ -374,10 +419,10 @@ public class Piece : MonoBehaviour
     }
 
     // vérifie si la case move.position est attaquée
-    public bool isCheck(Move move, ChessBoard chessBoard)
+    public bool isCheck(Position target, ChessBoard chessBoard)
     {
-        // on créer une position temporaire 
-        Position pos = new Position(move.getPosition().getX(), move.getPosition().getY());
+        // on créé une copie de la position à vérifier
+        Position pos = target.copy();
         // une piece temporaire
         Piece tempPiece;
 
@@ -403,6 +448,7 @@ public class Piece : MonoBehaviour
                         && (tempPiece.getName() == "Knight"))
                     {
                         print($"Check with kinght at ({tempPiece.getX()}, {tempPiece.getY()})");
+                        this.dangerousPiece = tempPiece;
                         return true;
                     }
                     else if (Mathf.Abs(i) == 1 && Mathf.Abs(j) == 1
@@ -410,6 +456,7 @@ public class Piece : MonoBehaviour
                         || tempPiece.getName() == "Queen"))
                     {
                         print($"Check with {tempPiece.name} at ({tempPiece.getX()}, {tempPiece.getY()})");
+                        this.dangerousPiece = tempPiece;
                         return true;
                     }
                 }
@@ -423,8 +470,8 @@ public class Piece : MonoBehaviour
         // on trace une ligne dans chaque direction pour vérifier si une pièce n'attaque pas la case
         for (int i = 0; i < 8; i++)
         {
-            // on réinitialise la position temporaire à la position de la pièce étudiée
-            pos.setPosition(this.getX(), this.getY());
+            // on réinitialise la position temporaire
+            pos.setPosition(target.getX(), target.getY());
 
             // on regarde la permière piece touvée dans une direction donnée
             chessBoard.findNextPiece(directions[i], pos);
@@ -437,12 +484,14 @@ public class Piece : MonoBehaviour
                 if (pieceFoundName == "Queen")
                 {
                     print($"Check with {pieceFound.name} at ({pieceFound.getX()}, {pieceFound.getY()})");
+                    this.dangerousPiece = pieceFound;
                     return true;
                 }
                 // une tour adverse qui attaque la case en ligne droite,
                 else if (i < 4 && pieceFoundName == "Rook")
                 {
                     print($"Check with {pieceFound.name} at ({pieceFound.getX()}, {pieceFound.getY()})");
+                    this.dangerousPiece = pieceFound;
                     return true;
                 }
                 else if (i >= 4)
@@ -451,17 +500,19 @@ public class Piece : MonoBehaviour
                     if (pieceFoundName == "Bishop")
                     {
                         print($"Check with {pieceFound.name} at ({pieceFound.getX()}, {pieceFound.getY()})");
+                        this.dangerousPiece = pieceFound;
                         return true;
                     }
                     // ou un pion proche en diagonale
                     else if (pieceFoundName == "Pawn"
                         && (pieceFound.getColor() == "Black"
-                        && pieceFound.getY() == this.getY() + 1
+                        && pieceFound.getY() == target.getY() - 1
                         || pieceFound.getColor() == "White"
-                        && pieceFound.getY() == this.getY() - 1)
-                        && Mathf.Abs(move.getPosition().getX() - this.getX()) == 1)
+                        && pieceFound.getY() == target.getY() + 1)
+                        && Mathf.Abs(pos.getX() - target.getX()) == 1) // TODO distanceX
                     {
                         print($"Check with {pieceFound.name} at ({pieceFound.getX()}, {pieceFound.getY()})");
+                        this.dangerousPiece = pieceFound;
                         return true;
                     }
                 }

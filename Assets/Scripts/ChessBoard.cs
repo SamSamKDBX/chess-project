@@ -240,7 +240,7 @@ public class ChessBoard : MonoBehaviour
 
         // Si la direction est "Bottom", "BottomRightCorner" ou "BottomLeftCorner", 
         // on se déplace vers le bas (ligne négative : -1), sinon vers le haut (+1).
-        int stepY = direction == "Bottom" || direction == "BottomRightCorner" || direction == "BottomLeftCorner" ? -1 : 1;
+        int stepY = direction == "Bottom" || direction == "BottomRightCorner" || direction == "BottomLeftCorner" ? 1 : -1;
 
         // Si la direction est "Right", "BottomRightCorner" ou "TopRightCorner",
         // on se déplace vers la droite (colonne positive : +1), sinon vers la gauche (-1).
@@ -258,30 +258,27 @@ public class ChessBoard : MonoBehaviour
         {
             stepX = 0;
         }
+        print($"findNextPiece({direction},({position.getX()}, {position.getY()}))");
 
         // puis on déplace la position dans la direction donnée jusqu'à trouver une case non vide
         // ou atteindre la position target du mouvement étudié
+        bool firstIteration = true;
         while (isNotOut(position))
         {
             posX = position.getX();
             posY = position.getY();
-            if (this.chessBoard[posY, posX] == null || posX == position.getX() && posY == position.getY())
+            if (firstIteration == true || this.chessBoard[posY, posX] == null)
             {
                 position.incrementXY(stepX, stepY);
+                firstIteration = false;
+                continue;
             }
-            else
-            {
-                break;
-            }
+            break;
         }
         if (this.getPiece(position) != null)
         {
             print($"piece found at ({position.getX()}, {position.getY()}) : {this.getPiece(position).name}");
         }
-        // je sais plus pourquoi j'ai mis ca...
-        // on rajoute la direction de là ou on viens à la position de la case sur laquelle on est tombé
-        // position.directionFromColumn = stepX;
-        // position.directionFromLine = stepY;
     }
 
     public void print()
