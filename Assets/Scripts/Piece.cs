@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine.Rendering.Universal.Internal;
+using System;
 
 public class Piece : MonoBehaviour
 {
@@ -92,7 +93,7 @@ public class Piece : MonoBehaviour
         this.hasNeverMoved = false;
     }
 
-    public bool moveTo(Move move, ChessBoard chessBoard, bool isVirtualMove)
+    public bool moveTo(Move move, ChessBoard chessBoard)
     {
         Position target = move.getPosition();
 
@@ -100,15 +101,7 @@ public class Piece : MonoBehaviour
         if (isLegalMove(move))
         {
             // on bouge dans le tableau chessBoard
-            chessBoard.movePieceChessBoard(target, this, isVirtualMove);
-            /* // si le roi est en échec après le mouvement, on reviens à la position initiale
-            if (chessBoard.getKing(this.color).isCheck(move, chessBoard))
-            {
-                chessBoard.movePieceChessBoard(this.latestPositions.Last(), this, isVirtualMove);
-                this.latestPositions.RemoveAt(this.latestPositions.Count - 1);
-                // Debug.Log("You cannot put the king in check");
-                return false;
-            } */
+            chessBoard.movePieceChessBoard(target, this);
             chessBoard.addMoveToHistory(move);
             print($"Move piece {move.getPiece().name} to ({target.getX()}, {target.getY()}) is legal\n--------------------------------------------------------------------");
             return true;
@@ -122,6 +115,7 @@ public class Piece : MonoBehaviour
         if (move.getPosition().equals(this.position)) { print("target equals position"); return false; }
         if (!chessBoard.isNotOut(move.getPosition())) { print("target is out"); return false; }
         if (!this.isWayClear(move, chessBoard)) { print("way is not clear"); return false; }
+        if (willPutKingInCheck(move, chessBoard)) { print("Cannot put king in check"); return false; }
         switch (this.Name)
         {
             case "King": return this.isKingLegalMove(move);
@@ -133,6 +127,52 @@ public class Piece : MonoBehaviour
             default:
                 print("Error in Piece.isLegalMove()");
                 return false;
+        }
+    }
+
+    private bool willPutKingInCheck(Move move, ChessBoard chessBoard)
+    {
+        // TODO
+        int indexDirections = 0;
+        Position foundPiecePos = this.position.copy();
+        Piece foundPiece;
+        while (indexDirections < 8)
+        {
+            chessBoard.findNextPiece(this.directions[indexDirections], foundPiecePos);
+            foundPiece = chessBoard.getPiece(foundPiecePos);
+            if (foundPiece != null && foundPiece == chessBoard.getKing(this.color)) break;
+            indexDirections++;
+        }
+        string directionToVerify = findOpposite(this.directions[indexDirections]);
+        chessBoard.findNextPiece(directionToVerify, foundPiecePos);
+        foundPiece = chessBoard.getPiece(foundPiecePos);
+        if (foundPiece != null && foundPiece.getColor() != this.color && foundPiece.isDangerous(directionToVerify))
+        {
+            // le roi est en danger si on bouge la piece actuelle
+            return true;
+        }
+        return false;
+    }
+
+    private bool isDangerous(string directionToVerify)
+    {
+        // TODO
+        throw new NotImplementedException();
+    }
+
+    private string findOpposite(string direction)
+    {
+        switch (direction)
+        {
+            case "Top": return "Bottom";
+            case "Bottom": return "Top";
+            case "Left": return "Right";
+            case "Right": return "Left";
+            case "TopRightCorner": return "BottomLeftCorner";
+            case "BottomLeftCorner": return "TopRightCorner";
+            case "TopLeftCorner": return "BottomRightCorner";
+            case "BottomRightCorner": return "TopLeftCorner";
+            default: return null;
         }
     }
 
@@ -654,7 +694,7 @@ public class Piece : MonoBehaviour
                             int x = (int)possibleSquare.transform.position.x;
                             int y = -(int)possibleSquare.transform.position.y;
                             print($"normalement le move ({x},{y}) est legal");
-                            this.moveTo(new Move(this, x, y), this.chessBoard, false);
+                            this.moveTo(new Move(this, x, y), this.chessBoard);
                         }
                         possibleSquare.SetActive(false);
                     }
