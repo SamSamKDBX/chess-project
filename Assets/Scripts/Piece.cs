@@ -16,6 +16,7 @@ public class Piece : MonoBehaviour
     private bool isClickedVar;
     private int directionY;
     private Piece dangerousPiece;
+    public SpriteRenderer capturedSR;
     private readonly string[] directions = {
             "Bottom",
             "Right",
@@ -94,6 +95,39 @@ public class Piece : MonoBehaviour
         this.hasNeverMoved = false;
     }
 
+    private string getDirectionBetween(Position from, Position to)
+    {
+        int dx = to.getX() - from.getX();
+        int dy = to.getY() - from.getY();
+
+        if (dx == 0 && dy > 0) return "Top";
+        if (dx == 0 && dy < 0) return "Bottom";
+        if (dy == 0 && dx > 0) return "Right";
+        if (dy == 0 && dx < 0) return "Left";
+        if (dx > 0 && dy > 0 && dx == dy) return "TopRightCorner";
+        if (dx < 0 && dy > 0 && -dx == dy) return "TopLeftCorner";
+        if (dx > 0 && dy < 0 && dx == -dy) return "BottomRightCorner";
+        if (dx < 0 && dy < 0 && dx == dy) return "BottomLeftCorner";
+
+        return null; // Pas une direction valide (pas aligné)
+    }
+
+    private (int stepX, int stepY) getStepFromDirection(string direction)
+    {
+        switch (direction)
+        {
+            case "Top": return (0, 1);
+            case "Bottom": return (0, -1);
+            case "Right": return (1, 0);
+            case "Left": return (-1, 0);
+            case "TopRightCorner": return (1, 1);
+            case "TopLeftCorner": return (-1, 1);
+            case "BottomRightCorner": return (1, -1);
+            case "BottomLeftCorner": return (-1, -1);
+            default: return (0, 0); // direction inconnue
+        }
+    }
+
     public bool moveTo(Move move, ChessBoard chessBoard)
     {
         Position target = move.getPosition();
@@ -117,7 +151,7 @@ public class Piece : MonoBehaviour
         if (!chessBoard.isNotOut(move.getPosition())) { print("target is out"); return false; }
         if (!this.isWayClear(move, chessBoard)) { print("way is not clear"); return false; }
         if (willPutKingInCheck(move, chessBoard)) { print("Cannot put king in check"); return false; }
-        if (isCheck(chessBoard.getKing(this.color).getPosition(), this.chessBoard) && isNotSavingKing(move))
+        if (this.Name != "King" && isCheck(chessBoard.getKing(this.color).getPosition(), this.chessBoard) && isNotSavingKing(move))
         {
             print("save the king before !");
             return false;
@@ -140,32 +174,37 @@ public class Piece : MonoBehaviour
     {
         // TODO ca marche pas encore
         string dangerousPieceName = dangerousPiece.getName();
+        Position dangerousPiecePos = dangerousPiece.getPosition();
+        Position kingPos = chessBoard.getKing(this.color).getPosition();
         if (move.getPosition().equals(this.dangerousPiece.getPosition())) { print("eat it is a good idea"); return false; }
         if (dangerousPieceName == "Knight" ||
             dangerousPieceName == "Pawn" ||
-            dangerousPieceName == "Rook" && isBlockingRook(move.getPosition()) ||
-            dangerousPieceName == "Bishop" && isBlockingBishop(move.getPosition()) ||
-            dangerousPieceName == "Queen" && (isBlockingRook(move.getPosition()) || isBlockingBishop(move.getPosition())))
+            (dangerousPieceName == "Rook" || dangerousPieceName == "Bishop" || dangerousPieceName == "Queen") &&
+            !isBlocking(move.getPosition()))
         {
-            print("Not Saving the King");
+            //print("Not Saving the King");
             return true;
         }
+        //print("is Saving the king--------------------------------");
         return false;
     }
 
-    private bool isBlockingBishop(Position position)
+    private bool isBlocking(Position target)
     {
-        Position kingPos = chessBoard.getKing(this.color).getPosition();
-        if (position.distanceX(kingPos) == position.distanceY(kingPos))
-            return true;
-        return false;
-    }
+        Position tempPos = chessBoard.getKing(this.color).getPosition().copy();
+        Position dangerousPiecePos = this.dangerousPiece.getPosition();
+        (int stepX, int stepY) = getStepFromDirection(getDirectionBetween(tempPos, dangerousPiecePos));
 
-    private bool isBlockingRook(Position position)
-    {
-        if (position.getX() == chessBoard.getKing(this.color).getX() && position.getX() == dangerousPiece.getX() ||
-            position.getY() == chessBoard.getKing(this.color).getY() && position.getY() == dangerousPiece.getY())
-            return true;
+        while (chessBoard.isNotOut(tempPos) && !tempPos.equals(dangerousPiecePos))
+        {
+            if (tempPos.equals(target))
+            {
+                //print("is blocking attack");
+                return true;
+            }
+            tempPos.incrementXY(stepX, stepY);
+        }
+        //print("is not blocking attack");
         return false;
     }
 
@@ -386,8 +425,8 @@ public class Piece : MonoBehaviour
         // si le pion n'a pas bougé et qu'il avance de deux cases verticalement
         // ou
         // si le pion avance d'une case verticalement
-        print($"double : {targetY} == {posY + 2 * this.directionY} && {posY} == {startLine} && {targetX} == {posX}");
-        print($"eat : {targetY} == {posY + this.directionY} && {target.distanceX(this.position)} == 1");
+        //print($"double : {targetY} == {posY + 2 * this.directionY} && {posY} == {startLine} && {targetX} == {posX}");
+        //print($"eat : {targetY} == {posY + this.directionY} && {target.distanceX(this.position)} == 1");
         if ((targetY == posY + 2 * this.directionY && posY == startLine && targetX == posX)
             || (targetY == posY + this.directionY && targetX == posX))
         {
@@ -398,7 +437,7 @@ public class Piece : MonoBehaviour
             Piece lastMovedPiece = this.chessBoard.getLastMoveFromHistory().getPiece();
 
             // si le pion se déplace d'une case en diagonale sur une case occuppée par un pion adverse
-            print($" eat 2 : {this.chessBoard.getPiece(target)} != null && {this.color} != {this.chessBoard.getPiece(this.position).getColor()}");
+            //print($" eat 2 : {this.chessBoard.getPiece(target)} != null && {this.color} != {this.chessBoard.getPiece(this.position).getColor()}");
             if (this.chessBoard.getPiece(target) != null
                 && this.color != this.chessBoard.getPiece(target).getColor())
             {
