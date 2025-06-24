@@ -5,7 +5,7 @@ public class Game : MonoBehaviour
 {
     public ChessBoard chessBoard;
 
-    void Start()
+/*     void Start()
     {
         // faire un test de mouvement 
         Position pos = new Position(4, 6); // position du pion blanc devant le roi (e2);
@@ -29,5 +29,5 @@ public class Game : MonoBehaviour
         piece = chessBoard.getPiece(new Position(6, 3));
         move_test = new Move(piece, 6, 4);
         piece.moveTo(move_test, chessBoard);
-    }  
+    }   */
 }

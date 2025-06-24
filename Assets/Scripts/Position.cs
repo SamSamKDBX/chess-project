@@ -17,7 +17,8 @@ public class Position
         this.y = y;
     }
 
-    public void incrementXY(int xToAdd, int yToAdd) {
+    public void incrementXY(int xToAdd, int yToAdd)
+    {
         this.x += xToAdd;
         this.y += yToAdd;
     }
@@ -50,5 +51,10 @@ public class Position
     public int distanceY(Position p)
     {
         return Mathf.Abs(this.y - p.getY());
+    }
+
+    public string toString()
+    {
+        return $"({this.x}, {this.y})";
     }
 }

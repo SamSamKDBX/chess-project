@@ -83,6 +83,7 @@ public class ChessBoard : MonoBehaviour
                 }
             }
         }
+        this.print();
     }
 
     private string getPieceName(int columnIndex)
@@ -244,11 +245,12 @@ public class ChessBoard : MonoBehaviour
 
     public Move getLastMoveFromHistory()
     {
+        if (this.movesHistory.Count == 0) return null;
         return this.movesHistory.Last();
     }
 
     // scan dans la direction donnée depuis la position donnée jusqu'à tomber sur une pièce ou sortir du plateau
-    public void findNextPiece(string direction, Position position)
+    public void findNextPiece(string direction, Position position, Position stop)
     {
         int posX;
         int posY;
@@ -287,10 +289,16 @@ public class ChessBoard : MonoBehaviour
             {
                 position.incrementXY(stepX, stepY);
                 firstIteration = false;
+                if (stop != null && position.equals(stop))
+                {
+                    print("position = stop : " + position.toString() + " = " + stop.toString());
+                    break;
+                }
                 continue;
             }
             break;
         }
+        /* print("scan stoped at " + position.toString()); */
         if (this.getPiece(position) != null)
         {
             //print($"piece found at ({position.getX()}, {position.getY()}) : {this.getPiece(position).name}");
@@ -386,9 +394,9 @@ public class ChessBoard : MonoBehaviour
         return str;
     }
 
-    private void displayCapturedPieces(List<Piece> capturedPieces, int xDisplay)
+    private void displayCapturedPieces(List<Piece> capturedPieces, int yDisplay)
     {
-        int i = 0;
+        float xDisplay = 8.5f;
         string[] names = {
             "Queen",
             "Rook",
@@ -402,27 +410,19 @@ public class ChessBoard : MonoBehaviour
             List<Piece> piecesToDisplay = capturedPieces.FindAll(p => p.getName() == name);
             if (piecesToDisplay.Count > 0)
             {
-                piecesToDisplay.ForEach(p => p.transform.position = new Vector3(xDisplay, -i, -1));
-
-                Piece p = piecesToDisplay[0];
-
-                // Affiche le nombre à côté
-                if (piecesToDisplay.Count > 1)
+                for (int j = 0; j < piecesToDisplay.Count; j++)
                 {
-                    // Instancie ou met à jour un texte à côté de la pièce
-                    GameObject textObj = Instantiate(this.capturedPieceCountTextPrefab, p.transform.position + new Vector3(0.1f, -0.1f, 0), Quaternion.identity, p.transform);
-                    var textMesh = textObj.GetComponent<TextMesh>();
-                    if (textMesh != null)
-                        textMesh.text = "x" + piecesToDisplay.Count;
+                    piecesToDisplay[j].transform.position = new Vector3(xDisplay, yDisplay, -1 + j);
+                    xDisplay += 0.2f;
                 }
-                i++;
+                xDisplay += 0.8f;
             }
         }
     }
 
     void Update()
     {
-        displayCapturedPieces(this.capturedBlackPieces, 10);
-        displayCapturedPieces(this.capturedWhitePieces, 11);
+        displayCapturedPieces(this.capturedBlackPieces, -7);
+        displayCapturedPieces(this.capturedWhitePieces, 0);
     }
 }

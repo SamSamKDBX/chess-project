@@ -3,6 +3,8 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine.Rendering.Universal.Internal;
 using System;
+using Unity.VisualScripting;
+using System.IO.Pipes;
 
 public class Piece : MonoBehaviour
 {
@@ -17,6 +19,7 @@ public class Piece : MonoBehaviour
     private int directionY;
     private Piece dangerousPiece;
     public SpriteRenderer capturedSR;
+    private bool isWhitePlayerTurn;
     private readonly string[] directions = {
             "Bottom",
             "Right",
@@ -38,6 +41,7 @@ public class Piece : MonoBehaviour
         this.chessBoard = chessBoard;
         this.latestPositions = new List<Position>();
         this.isClickedVar = false;
+        this.isWhitePlayerTurn = true;
     }
 
     public string getName()
@@ -100,14 +104,14 @@ public class Piece : MonoBehaviour
         int dx = to.getX() - from.getX();
         int dy = to.getY() - from.getY();
 
-        if (dx == 0 && dy > 0) return "Top";
-        if (dx == 0 && dy < 0) return "Bottom";
+        if (dx == 0 && dy < 0) return "Top";
+        if (dx == 0 && dy > 0) return "Bottom";
         if (dy == 0 && dx > 0) return "Right";
         if (dy == 0 && dx < 0) return "Left";
-        if (dx > 0 && dy > 0 && dx == dy) return "TopRightCorner";
-        if (dx < 0 && dy > 0 && -dx == dy) return "TopLeftCorner";
-        if (dx > 0 && dy < 0 && dx == -dy) return "BottomRightCorner";
-        if (dx < 0 && dy < 0 && dx == dy) return "BottomLeftCorner";
+        if (dx > 0 && dy < 0 && dx == -dy) return "TopRightCorner";
+        if (dx < 0 && dy < 0 && dx == dy) return "TopLeftCorner";
+        if (dx > 0 && dy > 0 && dx == dy) return "BottomRightCorner";
+        if (dx < 0 && dy > 0 && -dx == dy) return "BottomLeftCorner";
 
         return null; // Pas une direction valide (pas aligné)
     }
@@ -148,9 +152,9 @@ public class Piece : MonoBehaviour
     public bool isLegalMove(Move move)
     {
         if (move.getPosition().equals(this.position)) { print("target equals position"); return false; }
-        if (!chessBoard.isNotOut(move.getPosition())) { print("target is out"); return false; }
-        if (!this.isWayClear(move, chessBoard)) { print("way is not clear"); return false; }
-        if (willPutKingInCheck(move, chessBoard)) { print("Cannot put king in check"); return false; }
+        if (!chessBoard.isNotOut(move.getPosition())) { print("target " + move.getPosition().toString() + " is out"); return false; }
+        if (!this.isWayClear(move, chessBoard)) { /* print("way is not clear");  */return false; }
+        if (this.Name != "King" && willPutKingInCheck(move, chessBoard)) { print("Cannot put king in check"); return false; }
         if (this.Name != "King" && isCheck(chessBoard.getKing(this.color).getPosition(), this.chessBoard) && isNotSavingKing(move))
         {
             print("save the king before !");
@@ -170,9 +174,13 @@ public class Piece : MonoBehaviour
         }
     }
 
+    /* 
+        Méthode qui vérifie si la piece bougée (autre que le roi) se place entre l'attaquant du roi et le roi. 
+     */
     private bool isNotSavingKing(Move move)
     {
         // TODO ca marche pas encore
+        // dangerousPiece est initialisé dans isCheck qui est toujours exécuté avant cette méthode
         string dangerousPieceName = dangerousPiece.getName();
         Position dangerousPiecePos = dangerousPiece.getPosition();
         Position kingPos = chessBoard.getKing(this.color).getPosition();
@@ -189,25 +197,27 @@ public class Piece : MonoBehaviour
         return false;
     }
 
+    /* Méthode qui vérifie si la target se situe entre la piece attaquante et le roi */
     private bool isBlocking(Position target)
     {
         Position tempPos = chessBoard.getKing(this.color).getPosition().copy();
         Position dangerousPiecePos = this.dangerousPiece.getPosition();
-        (int stepX, int stepY) = getStepFromDirection(getDirectionBetween(tempPos, dangerousPiecePos));
+        chessBoard.findNextPiece(getDirectionBetween(tempPos, dangerousPiecePos), tempPos, target);
 
-        while (chessBoard.isNotOut(tempPos) && !tempPos.equals(dangerousPiecePos))
+        if (tempPos.equals(target))
         {
-            if (tempPos.equals(target))
-            {
-                //print("is blocking attack");
-                return true;
-            }
-            tempPos.incrementXY(stepX, stepY);
+            print("isBlocking !");
+            return true;
         }
+
         //print("is not blocking attack");
         return false;
     }
 
+    /*
+        Méthode qui vérifie si en bougeant une piece autre que le roi, celui-ci serait mis en échec 
+        par une piece se situant de l'autre coté de la piece que l'on souhaite déplacer 
+     */
     private bool willPutKingInCheck(Move move, ChessBoard chessBoard)
     {
         // TODO
@@ -217,7 +227,7 @@ public class Piece : MonoBehaviour
         while (indexDirections < 8)
         {
             foundPiecePos = this.position.copy();
-            chessBoard.findNextPiece(this.directions[indexDirections], foundPiecePos);
+            chessBoard.findNextPiece(this.directions[indexDirections], foundPiecePos, null);
             foundPiece = chessBoard.getPiece(foundPiecePos);
             if (foundPiece != null && foundPiece == chessBoard.getKing(this.color)) break;
             indexDirections++;
@@ -225,9 +235,14 @@ public class Piece : MonoBehaviour
         if (foundPiece != chessBoard.getKing(this.color)) { print("pas besoin de la suite"); return false; }
         string directionToVerify = findOpposite(this.directions[indexDirections]);
         foundPiecePos = this.position.copy();
-        chessBoard.findNextPiece(directionToVerify, foundPiecePos);
+        chessBoard.findNextPiece(directionToVerify, foundPiecePos, null);
         foundPiece = chessBoard.getPiece(foundPiecePos);
-        if (foundPiece != null && foundPiece.getColor() != this.color && foundPiece.isDangerous(directionToVerify))
+        string directionMove = getDirectionBetween(this.position, move.getPosition());
+        if (foundPiece != null &&
+            foundPiece.getColor() != this.color &&
+            foundPiece.isDangerous(directionToVerify) &&
+            directionMove != directions[indexDirections] &&
+            directionMove != directionToVerify)
         {
             // le roi est en danger si on bouge "this"
             print("Cannot put the king in check");
@@ -272,74 +287,25 @@ public class Piece : MonoBehaviour
 
         // on récupère la position target du mouvement et ses coordonnées
         Position target = move.getPosition();
-        int targetX = target.getX();
-        int targetY = target.getY();
 
-        // les coordonnées de la pièce actuelle (this)
-        int posX = this.getX();
-        int posY = this.getY();
+        Position scanPos = this.position.copy();
+        Piece foundPiece;
 
-        int stepX; // direction du pas en x
-        int stepY; // direction du pas en Y
+        string direction = getDirectionBetween(scanPos, target);
 
-        Position scanPos;
+        // on regarde la permière piece touvée dans une direction donnée
+        chessBoard.findNextPiece(direction, scanPos, target);
+        foundPiece = chessBoard.getPiece(scanPos);
 
-        // Si la direction est "Bottom", "BottomRightCorner" ou "BottomLeftCorner", 
-        // on se déplace vers le bas (ligne négative : -1), sinon vers le haut (+1).
-        // (targetY > posY && targetX == posX) || (targetY > posY && targetX < posX) || (targetY > posY && targetX > posX)
-        stepY = targetY > posY ? 1 : -1;
-
-        // Si la direction est "Right", "BottomRightCorner" ou "TopRightCorner",
-        // on se déplace vers la droite (colonne positive : +1), sinon vers la gauche (-1).
-        // (targetY == posY && targetX > posX) || (targetY < posY && targetX > posX) || (targetY > posY && targetX > posX)
-        stepX = targetX > posX ? 1 : -1;
-
-        // Si la direction est strictement horizontale ("Left" ou "Right"),
-        // il n'y a pas de mouvement vertical, donc on met stepY à 0.
-        if (targetY == posY)
-        {
-            stepY = 0;
-        }
-        // Si la direction est strictement verticale ("Bottom" ou "Top"),
-        // il n'y a pas de mouvement horizontal, donc on met stepX à 0.
-        else if (targetX == posX)
-        {
-            stepX = 0;
-        }
-
-        // on initialise une position (qui va changer) pour la prochaine pièce trouvée dans la direction du mouvement
-        // et qui démarre à la position de la pièce actuelle (this)
-        scanPos = this.position.copy();
-
-        // puis on déplace la position dans la direction donnée jusqu'à trouver une case non vide
-        // ou atteindre la position target du mouvement étudié
-        while (chessBoard.isNotOut(scanPos)
-            && !scanPos.equals(target))
-        {
-            scanPos.incrementXY(stepX, stepY);
-            if (chessBoard.getPiece(scanPos) != null)
-            {
-                print($"scan stoped at ({scanPos.getX()}, {scanPos.getY()}) with piece : {chessBoard.getPiece(scanPos).getName()}");
-                break;
-            }
-            else if (scanPos.equals(target))
-            {
-                print($"scan stoped at ({scanPos.getX()}, {scanPos.getY()}) because the target is here");
-            }
-        }
-
-        // Si la case sur laquelle on s'est arrêté est différente de la target du move
-        // ou que la case comporte une pièce de même couleur, alors le move n'est pas valide (passage à travers une pièce)
-        Piece foundPiece = chessBoard.getPiece(scanPos);
-        if (!scanPos.equals(target) || foundPiece != null && foundPiece.getColor() == this.color)
-        {
-            print("Way is not clear\nscanPos.equals(target) = " + scanPos.equals(target) + "\nfoundPiece null ? " + foundPiece == null);
+        if (foundPiece != null && foundPiece.getColor() == this.color || !scanPos.equals(target))
+        {/* 
+                print("(foundPiece != null && foundPiece.getColor() == this.color) = ");
+                print(foundPiece != null && foundPiece.getColor() == this.color);
+                print("Piece found : " + foundPiece.getName()); */
+            print("Way is not clear, position out or piece found at " + scanPos.toString());
             return false;
         }
-
-        // on ne passe jamais au dessus d'une pièce et on ne s'arrête pas sur une case remplie par une pièce
-        // de la même couleur, donc tout va bien
-        print("way is clear");
+        print("way clear");
         return true;
     }
 
@@ -434,17 +400,25 @@ public class Piece : MonoBehaviour
         }
         else if (targetY == posY + this.directionY && target.distanceX(this.position) == 1)
         {
-            Piece lastMovedPiece = this.chessBoard.getLastMoveFromHistory().getPiece();
-
             // si le pion se déplace d'une case en diagonale sur une case occuppée par un pion adverse
             //print($" eat 2 : {this.chessBoard.getPiece(target)} != null && {this.color} != {this.chessBoard.getPiece(this.position).getColor()}");
             if (this.chessBoard.getPiece(target) != null
                 && this.color != this.chessBoard.getPiece(target).getColor())
             {
+                print("Prise en diagonale");
                 return true;
             }
+
+            Move lastMove = this.chessBoard.getLastMoveFromHistory();
+            if (lastMove == null)
+            {
+                print("last move null");
+                return false;
+            }
+            Piece lastMovedPiece = lastMove.getPiece();
+
             // si le pion fait une prise en passant
-            else if (lastMovedPiece.getName() == "Pawn"
+            if (lastMovedPiece.getName() == "Pawn"
                 && lastMovedPiece.getColor() != this.color
                 && target.getX() == lastMovedPiece.getPosition().getX()
                 && targetY == 2 && posY == 3 || targetY == 5 && posY == 4
@@ -471,7 +445,7 @@ public class Piece : MonoBehaviour
         {
             for (int j = -2; j < 3; j++)
             {
-                pos.setPosition(pos.getX() + i, pos.getY() + j);
+                pos = new Position(target.getX() + i, target.getY() + j);
                 tempPiece = chessBoard.getPiece(pos);
                 if (tempPiece != null && tempPiece.getColor() != this.color)
                 {
@@ -513,8 +487,16 @@ public class Piece : MonoBehaviour
             pos.setPosition(target.getX(), target.getY());
 
             // on regarde la permière piece touvée dans une direction donnée
-            chessBoard.findNextPiece(directions[i], pos);
+            chessBoard.findNextPiece(directions[i], pos, null);
             pieceFound = chessBoard.getPiece(pos);
+            // si on tombe sur le roi, on refais un scan après lui
+            if (pieceFound == this.chessBoard.getKing(this.color))
+            {
+                pos = pieceFound.getPosition().copy();
+                chessBoard.findNextPiece(directions[i], pos, null);
+                pieceFound = chessBoard.getPiece(pos);
+                print("on passe sur le roi vers " + directions[i]);
+            }
             // si c'est une pièce adverse,
             if (pieceFound != null && pieceFound.getColor() != this.color)
             {
@@ -577,6 +559,8 @@ public class Piece : MonoBehaviour
             for (int j = -1; j < 2; j++)
             {
                 Move move = new Move(this, this.getX() + i, this.getY() + j);
+                print("devrait tester carré pour " + this.position.toString());
+                print("test square " + move.getPosition().toString());
                 if (isLegalMove(move))
                 {
                     moves.Add(move);
@@ -668,6 +652,7 @@ public class Piece : MonoBehaviour
         // optimisation possible
         int x;
         int y;
+        print("pawn is at " + this.position.toString());
         for (int i = 0; i < 4; i++)
         {
             // chaque case possible pour un pion
@@ -679,6 +664,7 @@ public class Piece : MonoBehaviour
                 case 3: x = this.getX() - 1; y = this.getY() + 1 * this.directionY; break;
                 default: return;
             }
+            print($"test for ({x},{y})");
             Move move = new Move(this, x, y);
             if (isLegalMove(move))
             {
@@ -755,7 +741,7 @@ public class Piece : MonoBehaviour
                     // Code à exécuter lorsqu'on clique sur l'objet
                     // attendre que le joueur clique sur une autre case
 
-                    Debug.Log("---------------------------------------------------------------\nL'objet " + this.name + " a été cliqué");
+                    Debug.Log("---------------------------------------------------------------\nL'objet " + this.name + " a été cliqué à la position " + this.position.toString());
                     return true;
                 }
             }
@@ -775,6 +761,7 @@ public class Piece : MonoBehaviour
                 // Vérifie si un objet a été touché par le rayon
                 if (hit.collider != null)
                 {
+                    possibleSquares.ForEach(s => s.SetActive(false));
                     // TODO
                     // boucle foreach pour les coups possible et vérification si la case cliquée est l'un d'eux
                     foreach (GameObject possibleSquare in possibleSquares)
@@ -785,6 +772,8 @@ public class Piece : MonoBehaviour
                             int y = -(int)possibleSquare.transform.position.y;
                             print($"normalement le move ({x},{y}) est legal");
                             this.moveTo(new Move(this, x, y), this.chessBoard);
+                            //this.isWhitePlayerTurn = this.isWhitePlayerTurn == false;
+                            //print($"c'est au tour des " + (this.isWhitePlayerTurn == true ? "blanc" : "noir"));
                         }
                         possibleSquare.SetActive(false);
                     }
@@ -794,8 +783,17 @@ public class Piece : MonoBehaviour
         }
         else if (this.isClicked())
         {
-            this.printPossibleMoves();
-            this.isClickedVar = true;
+            //print("this.color = " + this.color + "\nthis.isWhitePlayerTurn = " + this.isWhitePlayerTurn);
+            Move lastMove = this.chessBoard.getLastMoveFromHistory();
+            if (lastMove == null && this.color == "White" || lastMove.getPiece().getColor() != this.color)
+            {
+                this.printPossibleMoves();
+                this.isClickedVar = true;
+            }
+            else
+            {
+                print("Not your turn");
+            }
         }
     }
 }
