@@ -51,8 +51,9 @@ public class ChessBoard : MonoBehaviour
         // puis on rajoute les pièces
         foreach (Piece piece in pieces)
         {
-            int x = (int)piece.transform.position.x;
-            int y = (int)piece.transform.position.y;
+            int x = (int)piece.transform.position.x / 10;
+            int y = (int)piece.transform.position.y / 10;
+            print("for piece " + piece.name + $" position ({x}, {y})");
             this.chessBoard[-y, x] = piece;
         }
         // on remplie les attributs des pièces
@@ -153,7 +154,7 @@ public class ChessBoard : MonoBehaviour
         piece.setPosition(p);
 
         // on bouge la pièce dans la vue du jeu
-        piece.transform.position = new Vector3(piece.getX(), -piece.getY(), -1);
+        piece.transform.position = new Vector3(piece.getX() * 10, -piece.getY() * 10, -1);
         // on indique à la pièce qu'elle a bougée
         piece.madeMove();
         // debug affichage
@@ -162,6 +163,7 @@ public class ChessBoard : MonoBehaviour
 
     public void capturePiece(Piece p)
     {
+        this.chessBoard[p.getY(), p.getX()] = null;
         if (p.getColor() == "Black")
         {
             this.capturedBlackPieces.Add(p);

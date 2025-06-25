@@ -19,7 +19,8 @@ public class Piece : MonoBehaviour
     private int directionY;
     private Piece dangerousPiece;
     public SpriteRenderer capturedSR;
-    private bool isWhitePlayerTurn;
+    private bool enPassant;
+    private string rock;
     private readonly string[] directions = {
             "Bottom",
             "Right",
@@ -41,7 +42,6 @@ public class Piece : MonoBehaviour
         this.chessBoard = chessBoard;
         this.latestPositions = new List<Position>();
         this.isClickedVar = false;
-        this.isWhitePlayerTurn = true;
     }
 
     public string getName()
@@ -141,6 +141,22 @@ public class Piece : MonoBehaviour
         {
             // on bouge dans le tableau chessBoard
             chessBoard.movePieceChessBoard(target, this);
+            // si c'est la prise en passant, on capture ici
+            if (this.enPassant)
+            {
+                chessBoard.capturePiece(chessBoard.getLastMoveFromHistory().getPiece());
+                this.enPassant = false;
+            }
+            // si c'est un rock, on bouge également la tour
+            if (this.rock != null)
+            {
+                int startLine = this.color == "Black" ? 0 : 7;
+                if (this.rock == "Right")
+                    chessBoard.movePieceChessBoard(new Position(5, startLine), chessBoard.getPiece(new Position(7, startLine)));
+                else if (this.rock == "Left")
+                    chessBoard.movePieceChessBoard(new Position(3, startLine), chessBoard.getPiece(new Position(0, startLine)));
+                this.rock = null;
+            }
             chessBoard.addMoveToHistory(move);
             print($"Move piece {move.getPiece().name} to ({target.getX()}, {target.getY()}) is legal\n--------------------------------------------------------------------");
             return true;
@@ -313,14 +329,46 @@ public class Piece : MonoBehaviour
     private bool isKingLegalMove(Move move)
     {
         // on ne se deplace que d'une case
-        if (move.getPosition().distanceX(this.position) <= 1
-            && move.getPosition().distanceY(this.position) <= 1
+        if (((move.getPosition().distanceX(this.position) <= 1
+            && move.getPosition().distanceY(this.position) <= 1)
+            || isRocking(move.getPosition()))
             && !this.isCheck(move.getPosition(), chessBoard))
         {
             // faire le roque et isCheck ////////////////////////////////////////////////////////////////////
             return true;
         }
         print($"move to ({move.getPosition().getY()}, {move.getPosition().getY()}) is not king legal move");
+        return false;
+    }
+
+    private bool isRocking(Position target)
+    {
+        int startLine = this.color == "Black" ? 0 : 7;
+        int startCol = 4;
+        // si le roi n'a pas encore bougé
+        if (this.hasNeverMoved)
+        {
+            Piece rightRook = chessBoard.getPiece(new Position(7, startLine));
+            Piece leftRook = chessBoard.getPiece(new Position(0, startLine));
+            // si le roi se déplace de 2 cases sur le côté, que les cases entre le roi et la tour sont vides
+            if (target.equals(new Position(startCol + 2, startLine)) &&
+                rightRook != null && rightRook.neverMadeMove() &&
+                chessBoard.getPiece(new Position(5, startLine)) == null &&
+                chessBoard.getPiece(new Position(6, startLine)) == null)
+            {
+                this.rock = "Right";
+                return true;
+            }
+            if (target.equals(new Position(startCol - 2, startLine)) &&
+                leftRook != null && leftRook.neverMadeMove() &&
+                chessBoard.getPiece(new Position(1, startLine)) == null &&
+                chessBoard.getPiece(new Position(2, startLine)) == null &&
+                chessBoard.getPiece(new Position(3, startLine)) == null)
+            {
+                this.rock = "Left";
+                return true;
+            }
+        }
         return false;
     }
 
@@ -393,8 +441,9 @@ public class Piece : MonoBehaviour
         // si le pion avance d'une case verticalement
         //print($"double : {targetY} == {posY + 2 * this.directionY} && {posY} == {startLine} && {targetX} == {posX}");
         //print($"eat : {targetY} == {posY + this.directionY} && {target.distanceX(this.position)} == 1");
-        if ((targetY == posY + 2 * this.directionY && posY == startLine && targetX == posX)
+        if (((targetY == posY + 2 * this.directionY && posY == startLine && targetX == posX)
             || (targetY == posY + this.directionY && targetX == posX))
+            && chessBoard.getPiece(target) == null)
         {
             return true;
         }
@@ -412,7 +461,6 @@ public class Piece : MonoBehaviour
             Move lastMove = this.chessBoard.getLastMoveFromHistory();
             if (lastMove == null)
             {
-                print("last move null");
                 return false;
             }
             Piece lastMovedPiece = lastMove.getPiece();
@@ -421,9 +469,11 @@ public class Piece : MonoBehaviour
             if (lastMovedPiece.getName() == "Pawn"
                 && lastMovedPiece.getColor() != this.color
                 && target.getX() == lastMovedPiece.getPosition().getX()
-                && targetY == 2 && posY == 3 || targetY == 5 && posY == 4
+                && (targetY == 2 && posY == 3 || targetY == 5 && posY == 4)
                 && lastMovedPiece.getPosition().distanceX(this.position) == 1)
             {
+                print("en passant");
+                this.enPassant = true;
                 return true;
             }
         }
@@ -565,6 +615,23 @@ public class Piece : MonoBehaviour
                 {
                     moves.Add(move);
                 }
+            }
+        }
+
+        (int x, int y)[] positions = {
+            (2, 0),
+            (2, 7),
+            (6, 0),
+            (6, 7)
+        };
+
+        foreach ((int x, int y) position in positions)
+        {
+            Move move = new Move(this, position.x, position.y);
+            print("test square " + move.getPosition().toString());
+            if (isLegalMove(move))
+            {
+                moves.Add(move);
             }
         }
     }
@@ -768,8 +835,8 @@ public class Piece : MonoBehaviour
                     {
                         if (hit.collider.gameObject == possibleSquare)
                         {
-                            int x = (int)possibleSquare.transform.position.x;
-                            int y = -(int)possibleSquare.transform.position.y;
+                            int x = (int)possibleSquare.transform.position.x / 10;
+                            int y = -(int)possibleSquare.transform.position.y / 10;
                             print($"normalement le move ({x},{y}) est legal");
                             this.moveTo(new Move(this, x, y), this.chessBoard);
                             //this.isWhitePlayerTurn = this.isWhitePlayerTurn == false;
