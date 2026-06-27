@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
 /// <summary>
@@ -37,22 +39,46 @@ public class PieceV2 : MonoBehaviour
     public Colors Color => _color;
 
     /// <summary>
+    /// Contient la couleur de l'opposant
+    /// </summary>
+    public Colors OpponentColor => _color == Colors.BLACK ? Colors.WHITE : Colors.BLACK;
+
+    /// <summary>
+    /// Contient le type de mouvement de la pièce
+    /// </summary>
+    public IMoveType MoveType => _moveType;
+
+    /// <summary>
     /// Permet de récupérer la liste des cases où peut actuellement se déplacer la pièce
     /// </summary>
     /// <param name="board"></param>
     /// <returns></returns>
-    public virtual List<SquareV2> GetPossibleSquares(Board board)
+    public List<SquareV2> GetValidSquares(Board board)
     {
         throw new NotImplementedException();
     }
 
     /// <summary>
     /// Indique si la pièce peut se déplacer à la case donnée
+    /// <para>
+    /// Vérifie que :
+    /// <list type="bullet">
+    ///     <item>La case d'arrivée est sur le plateau</item>
+    ///     <item>La case d'arrivée ne contient pas une pièce de la même couleur</item>
+    ///     <item>Le déplacement est valide pour le type de déplacement que peut effectuer la pièce</item>
+    ///     <item>Le roi de la même couleur n'est pas en échec et ne le sera pas après le déplacement</item>
+    /// </list>
+    /// </para>
     /// </summary>
     /// <param name="context"></param>
+    /// <returns>True si la pièce peut se déplacer vers target, false sinon</returns>
     protected virtual bool CanMoveTo(SquareV2 target, Board board)
     {
-        return _moveType.IsValidMove(this, target, board);
+        return !board.IsOut(target)
+                && (target.IsEmpty || target.ContainedPiece.Color != _color)
+                && _moveType.IsValidMove(this, target, board)
+                && !board.IsKingInCheckNow(Color)
+                && !board.IsKingInCheckAfterMove(this, target);
     }
 
     /// <summary>
@@ -60,7 +86,7 @@ public class PieceV2 : MonoBehaviour
     /// </summary>
     /// <param name="target"></param>
     /// <param name="board"></param>
-    public void MoveTo(SquareV2 target, Board board)
+    public void TryMove(SquareV2 target, Board board)
     {
         // Si le mouvement est valide pour cette pièce
         if (CanMoveTo(target, board))
@@ -70,5 +96,20 @@ public class PieceV2 : MonoBehaviour
             target.ContainedPiece = this;
             _hasNeverMoved = false;
         }
+    }
+
+    /// <summary>
+    /// Permet de déplacer la pièce vers target temporairement sans aucun check
+    /// </summary>
+    /// <param name="target"></param>
+    /// <param name="board"></param>
+    /// <returns></returns>
+    public void VirtualMove(SquareV2 target)
+    {
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(target)).IsNotNull(target);
+
+        target.ContainedPiece = this;
+        _actualSquare = target;
     }
 }
