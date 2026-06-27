@@ -1,7 +1,21 @@
 using System;
+using Unity.VisualScripting;
 
 public class QueenMove : IMoveType
 {
+    /// <summary>
+    /// Indique si le mouvement est valide pour pieceToMove vers target 
+    /// (uniquement valide si une pièce est mangée lors du mouvement)
+    /// </summary>
+    /// <param name="pieceToMove"></param>
+    /// <param name="target"></param>
+    /// <param name="board"></param>
+    /// <returns></returns>
+    public bool IsEatingValidMove(PieceV2 pieceToMove, SquareV2 target, Board board)
+    {
+        return IsValidMove(pieceToMove, target, board);
+    }
+
     /// <summary>
     /// Indique si le mouvement est valide pour ce type de mouvement
     /// </summary>
@@ -14,9 +28,9 @@ public class QueenMove : IMoveType
     public bool IsValidMove(PieceV2 pieceToMove, SquareV2 target, Board board)
     {
         // Vérifier que les arguments ne sont pas null
-        if (pieceToMove == null) throw new ArgumentNullException($"{nameof(pieceToMove)} a été null.");
-        if (target == null) throw new ArgumentNullException($"{nameof(target)} a été null.");
-        if (board == null) throw new ArgumentNullException($"{nameof(board)} a été null.");
+        Ensure.That(nameof(pieceToMove)).IsNotNull(pieceToMove);
+        Ensure.That(nameof(target)).IsNotNull(target);
+        Ensure.That(nameof(board)).IsNotNull(board);
 
         SquareV2 origin = pieceToMove.ActualSquare;
         try
