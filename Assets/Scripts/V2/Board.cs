@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
 /// <summary>
@@ -28,23 +29,26 @@ public class Board
     /// <summary>
     /// Indique si la case est en dehors du plateau
     /// </summary>
-    /// <param name="s"></param>
+    /// <param name="square"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    private static bool IsOut(SquareV2 s)
+    public bool IsOut(SquareV2 square)
     {
-        if (s == null) throw new ArgumentNullException($"{nameof(s)} a été null");
-        return s.Col > 7 || s.Col < 0 || s.Line > 7 || s.Line < 0;
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(square)).IsNotNull(square);
+        // Retourner true si la case est en dehors du plateau
+        return !_allSquares.Contains(square) || square.Col > 7 || square.Col < 0 || square.Line > 7 || square.Line < 0;
     }
 
     /// <summary>
     /// Retourne les deux diagonales de la case en paramètre
     /// </summary>
     /// <param name="square"></param>
-    /// <returns></returns>
+    /// <returns>Une liste contenant les cases des deux diagonales de la case en paramètre</returns>
     public List<SquareV2> GetTwoDiagonals(SquareV2 square)
     {
-        if (square == null) throw new ArgumentNullException($"{nameof(square)} a été null");
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(square)).IsNotNull(square);
 
         return _allSquares.Where(s => s.DifferenceCol(square) == s.DifferenceLine(square))
                           .OrderBy(s => s.Col)
@@ -53,117 +57,177 @@ public class Board
     }
 
     /// <summary>
-    /// Renvoie la diagonale commune aux deux cases en paramètre
+    /// Permet de récupérer la diagonale commune aux deux cases en paramètre
     /// </summary>
-    /// <param name="s1"></param>
-    /// <param name="s2"></param>
-    /// <returns></returns>
+    /// <param name="square1"></param>
+    /// <param name="square2"></param>
+    /// <returns>
+    /// Une liste contenant les cases de la diagonale commune aux deux cases
+    /// </returns>
     /// <exception cref="ArgumentNullException"></exception>
-    /// <exception cref="InvalidOperationException"></exception>
-    public List<SquareV2> GetCommonDiagonal(SquareV2 s1, SquareV2 s2)
+    /// <exception cref="InvalidOperationException">Si les deux cases sont égales ou n'ont pas de diagonale commune</exception>
+    public List<SquareV2> GetCommonDiagonal(SquareV2 square1, SquareV2 square2)
     {
-        if (s1 == null) throw new ArgumentNullException($"{nameof(s1)} a été null");
-        if (s2 == null) throw new ArgumentNullException($"{nameof(s2)} a été null");
-        if (IsOut(s1)) throw new InvalidOperationException($"{nameof(s1)} est en dehors du plateau");
-        if (IsOut(s2)) throw new InvalidOperationException($"{nameof(s2)} est en dehors du plateau");
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(square1)).IsNotNull(square1);
+        Ensure.That(nameof(square2)).IsNotNull(square2);
+        // Vérifier que les cases sont dans les limites du plateau
+        Ensure.That(nameof(square1)).IsFalse(IsOut(square1));
+        Ensure.That(nameof(square2)).IsFalse(IsOut(square2));
+        // Vérifier que les deux cases sont différentes
+        if (square1.Equals(square2))
+            throw new InvalidOperationException($"{nameof(square1)} est égale à {nameof(square2)}");
+        // Vérifier que les deux cases sont sur la même diagonale
+        if (!square1.IsOnSameDiag(square2))
+            throw new InvalidOperationException($"{nameof(square1)} et {nameof(square2)} ne sont pas sur la même diagonale");
 
-        // Si les deux cases ne sont pas sur la même diagonale
-        if (s1.DifferenceCol(s2) != s1.DifferenceLine(s2)) throw new InvalidOperationException($"{nameof(s1)} et {nameof(s2)} ne sont pas sur la même diagonale");
-
-        return _allSquares.Where(s => s.DifferenceCol(s1) == s.DifferenceLine(s1) && s.DifferenceCol(s2) == s.DifferenceLine(s2))
+        return _allSquares.Where(s => s.IsOnSameDiag(square1) && s.IsOnSameDiag(square2))
                           .OrderBy(s => s.Col)
                           .ThenBy(s => s.Line)
                           .ToList();
     }
 
     /// <summary>
-    /// Renvoie la ligne ou colonne commune aux deux cases en paramètre
+    /// Permet de récupérer la ligne ou colonne commune aux deux cases en paramètre
     /// </summary>
-    /// <param name="s1"></param>
-    /// <param name="s2"></param>
+    /// <param name="square1"></param>
+    /// <param name="square2"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
-    public List<SquareV2> GetCommonRange(SquareV2 s1, SquareV2 s2)
+    public List<SquareV2> GetCommonRange(SquareV2 square1, SquareV2 square2)
     {
-        if (s1 == null) throw new ArgumentNullException($"{nameof(s1)} a été null");
-        if (s2 == null) throw new ArgumentNullException($"{nameof(s2)} a été null");
-        if (IsOut(s1)) throw new InvalidOperationException($"{nameof(s1)} est en dehors du plateau");
-        if (IsOut(s2)) throw new InvalidOperationException($"{nameof(s2)} est en dehors du plateau");
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(square1)).IsNotNull(square1);
+        Ensure.That(nameof(square2)).IsNotNull(square2);
+        // Vérifier que les cases sont dans les limites du plateau
+        Ensure.That(nameof(square1)).IsFalse(IsOut(square1));
+        Ensure.That(nameof(square2)).IsFalse(IsOut(square2));
+        // Vérifier que les deux cases sont différentes
+        if (square1.Equals(square2))
+            throw new InvalidOperationException($"{nameof(square1)} est égale à {nameof(square2)}");
 
         // Si les deux cases sont sur la même ligne
-        if (s1.IsOnSameLine(s2))
+        if (square1.IsOnSameLine(square2))
         {
             // Retourner la ligne
-            return _allSquares.Where(s => s.IsOnSameLine(s1))
+            return _allSquares.Where(s => s.IsOnSameLine(square1))
                               .OrderBy(s => s.Line)
                               .ToList();
         }
         // Sinon si les deux cases sont sur la même colonne
-        else if (s1.IsOnSameCol(s2))
+        else if (square1.IsOnSameCol(square2))
         {
             // Retourner la colonne
-            return _allSquares.Where(s => s.IsOnSameCol(s1))
+            return _allSquares.Where(s => s.IsOnSameCol(square1))
                               .OrderBy(s => s.Col)
                               .ToList();
         }
         else
         {
             // Sinon si les deux cases ne sont ni sur la même ligne ni sur la même colonne
-            throw new InvalidOperationException($"{nameof(s1)} et {nameof(s2)} ne sont pas sur la même ligne ni sur la même colonne");
+            throw new InvalidOperationException($"{nameof(square1)} et {nameof(square2)} ne sont pas sur la même ligne ni sur la même colonne");
         }
     }
 
     /// <summary>
-    /// Permet de parcourir le plateau depuis origin vers target
+    /// Indique si toutes s'il y a au moins une case non vide entre origin et target (exclus)
     /// </summary>
     /// <param name="origin"></param>
     /// <param name="target"></param>
-    /// <param name="squares"></param>
+    /// <param name="rangeOrDiag"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
-    public bool IsWayClear(SquareV2 origin, SquareV2 target, List<SquareV2> squares = null)
+    public bool AnyPieceBetween(SquareV2 origin, SquareV2 target, List<SquareV2> rangeOrDiag)
     {
-        if (origin == null) throw new ArgumentNullException($"{nameof(origin)} a été null");
-        if (target == null) throw new ArgumentNullException($"{nameof(target)} a été null");
-        if (IsOut(origin)) throw new InvalidOperationException($"{nameof(origin)} est en dehors du plateau");
-        if (IsOut(target)) throw new InvalidOperationException($"{nameof(target)} est en dehors du plateau");
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(origin)).IsNotNull(origin);
+        Ensure.That(nameof(target)).IsNotNull(target);
+        Ensure.That(nameof(rangeOrDiag)).IsNotNull(rangeOrDiag);
+        // Vérifier que les cases sont dans la range
+        Ensure.That(nameof(origin)).IsTrue(rangeOrDiag.Contains(origin));
+        Ensure.That(nameof(target)).IsTrue(rangeOrDiag.Contains(target));
 
-        int i = 0;
-        // Parcourir les cases jusqu'à origin
-        while (i < squares.Count && squares[i] != origin) i++;
-        // Parcourir les cases jusqu'à target
-        while (i < squares.Count)
-        {
-            // Si on tombe sur la target
-            if (squares[i] == target)
-            {
-                return true;
-            }
-            // Si on tombe sur une case non vide
-            else if (squares[i] != null)
-            {
-                throw new InvalidOperationException($"La case {squares[i]} n'est pas vide");
-            }
-        }
-        throw new InvalidOperationException($"");
+        // Récupérer les index de origin et target
+        int originIndex = rangeOrDiag.IndexOf(origin);
+        int targetIndex = rangeOrDiag.IndexOf(target);
+        int startIndex = Mathf.Min(targetIndex, originIndex);
+        int endIndex = Mathf.Max(targetIndex, originIndex);
+
+        // Parcourir les cases entre startIndex et endIndex 
+        // et checker si la case est vide
+        return rangeOrDiag.GetRange(startIndex + 1, endIndex - startIndex - 1)
+                          .Any(s => !s.IsEmpty);
     }
 
     /// <summary>
     /// Permet de récupérer le roi de la couleur donné
     /// </summary>
     /// <param name="color"></param>
-    /// <returns></returns>
+    /// <returns>Le roi de la couleur donnée ou null si pas trouvé</returns>
     public King GetKing(Colors color)
     {
-        return (King)_allSquares.FirstOrDefault(s => s.ContainedPiece is King && s.ContainedPiece?.Color == color)?.ContainedPiece;
+        return _allSquares.FirstOrDefault(s => s.ContainedPiece is King
+                                          && s.ContainedPiece?.Color == color)?.ContainedPiece as King;
+    }
+
+    /// <summary>
+    /// Indique si le roi de la couleur donnée est en échec
+    /// </summary>
+    /// <param name="color"></param>
+    /// <returns></returns>
+    public bool IsKingInCheckNow(Colors color)
+    {
+        King king = GetKing(color);
+        return IsAttacked(king.ActualSquare, king.Color);
+    }
+
+    /// <summary>
+    /// Indique si le roi de la couleur de la pièce donnée sera en échec 
+    /// après un déplacement de la pièce vers target
+    /// </summary>
+    /// <param name="piece"></param>
+    /// <param name="target"></param>
+    /// <returns></returns>
+    public bool IsKingInCheckAfterMove(PieceV2 piece, SquareV2 target)
+    {
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(piece)).IsNotNull(piece);
+        Ensure.That(nameof(target)).IsNotNull(target);
+
+        // Récupérer la pièce actuelle sur target et l'origine
+        PieceV2 oldPiece = target.ContainedPiece;
+        SquareV2 origin = piece.ActualSquare;
+        // Déplacer piece vers target
+        piece.VirtualMove(target);
+        // Tester si le roi est en échec
+        bool isKingCheck = IsKingInCheckNow(piece.Color);
+        // Remettre les pièces à leur place
+        piece.VirtualMove(origin);
+        oldPiece.VirtualMove(target);
+        return isKingCheck;
+    }
+
+    /// <summary>
+    /// Permet de savoir si la target est attaquée par une pièce de la couleur donnée
+    /// </summary>
+    /// <param name="color"></param>
+    /// <returns></returns>
+    public bool IsAttacked(SquareV2 target, Colors strikerColor)
+    {
+        // Pour chaque case contenant une pièce
+        // Checker si la pièce est de la couleur attaquante et si elle menace la target
+        return _allSquares.Select(s => s.ContainedPiece)
+                          .NotUnityNull()
+                          .Any(p => p.Color == strikerColor
+                                    && p.MoveType.IsEatingValidMove(p, target, this));
     }
 
     /// <summary>
     /// Permet d'afficher le plateau dans la console
     /// </summary>
-    public void Print()
+    public void Display()
     {
         Debug.Log(ToString());
     }
