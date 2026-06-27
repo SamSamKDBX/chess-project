@@ -1,4 +1,5 @@
 using System;
+using Unity.VisualScripting;
 
 /// <summary>
 /// Classe définissant une case du plateau
@@ -16,6 +17,13 @@ public class SquareV2
         AddStartingPiece();
     }
 
+    public SquareV2(SquareV2 otherSquare)
+    {
+        _line = otherSquare.Line;
+        _col = otherSquare.Col;
+        _containedPiece = otherSquare.ContainedPiece;
+    }
+
     /// <summary>
     /// Contient la ligne de la case
     /// </summary>
@@ -27,9 +35,9 @@ public class SquareV2
     public int Line => _line;
 
     /// <summary>
-    /// Indique si la case est en dehors du plateau
+    /// Indique si la case est vide
     /// </summary>
-    public bool IsOutOfBoard => Board.IsOut(this);
+    public bool IsEmpty => _containedPiece == null;
 
     /// <summary>
     /// Contient la pièce que contient la case ou null si aucune pièce sur cette case
@@ -41,53 +49,8 @@ public class SquareV2
     }
 
     /// <summary>
-    /// Permet de mesurer la distance entre la colonne de cette case et la colonne de la case donnée
-    /// </summary>
-    /// <param name="square">La case donnée</param>
-    /// <returns>La différence entre la colonne de la case et celle de la case donnée</returns>
-    public int DifferenceCol(SquareV2 square)
-    {
-        if (square == null) throw new ArgumentNullException($"{nameof(square)} a été null");
-        return Math.Abs(_col - square.Col);
-    }
-
-    /// <summary>
-    /// Permet de mesurer la distance entre la ligne de cette case et la ligne de la case donnée
-    /// </summary>
-    /// <param name="square">La case donnée</param>
-    /// <returns>La différence entre la ligne de la case et celle de la case donnée</returns>
-    public int DifferenceLine(SquareV2 square)
-    {
-        if (square == null) throw new ArgumentNullException($"{nameof(square)} a été null");
-        return Math.Abs(_line - square.Line);
-    }
-
-    /// <summary>
-    /// Indique si la case est sur la même ligne que la case donnée
-    /// </summary>
-    /// <param name="square">La case donnée</param>
-    /// <returns>La différence entre la ligne de la case et celle de la case donnée</returns>
-    public bool IsOnSameLine(SquareV2 square)
-    {
-        if (square == null) throw new ArgumentNullException($"{nameof(square)} a été null");
-        return _line == square.Line;
-    }
-
-    /// <summary>
-    /// Indique si la case est sur la même colonne que la case donnée
-    /// </summary>
-    /// <param name="square">La case donnée</param>
-    /// <returns>La différence entre la colonne de la case et celle de la case donnée</returns>
-    public bool IsOnSameCol(SquareV2 square)
-    {
-        if (square == null) throw new ArgumentNullException($"{nameof(square)} a été null");
-        return _col == square.Col;
-    }
-
-    /// <summary>
     /// Permet d'ajouter la pièce de départ à la case (n'ajoute rien si la case doit rester vide)
     /// </summary>
-    /// <exception cref="NotImplementedException"></exception>
     private void AddStartingPiece()
     {
         Colors color;
@@ -118,11 +81,105 @@ public class SquareV2
     }
 
     /// <summary>
+    /// Permet de mesurer la distance entre la colonne de cette case et la colonne de la case donnée
+    /// </summary>
+    /// <param name="square">La case donnée</param>
+    /// <returns>La différence entre la colonne de la case et celle de la case donnée</returns>
+    public int DifferenceCol(SquareV2 square)
+    {
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(square)).IsNotNull(square);
+        return Math.Abs(_col - square.Col);
+    }
+
+    /// <summary>
+    /// Permet de mesurer la distance entre la ligne de cette case et la ligne de la case donnée
+    /// </summary>
+    /// <param name="square">La case donnée</param>
+    /// <returns>La différence entre la ligne de la case et celle de la case donnée</returns>
+    public int DifferenceLine(SquareV2 square)
+    {
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(square)).IsNotNull(square);
+        return Math.Abs(_line - square.Line);
+    }
+
+    /// <summary>
+    /// Indique si la case est sur la même ligne que la case donnée
+    /// </summary>
+    /// <param name="square">La case donnée</param>
+    /// <returns>La différence entre la ligne de la case et celle de la case donnée</returns>
+    public bool IsOnSameLine(SquareV2 square)
+    {
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(square)).IsNotNull(square);
+        return _line == square.Line;
+    }
+
+    /// <summary>
+    /// Indique si la case est sur la même colonne que la case donnée
+    /// </summary>
+    /// <param name="square">La case donnée</param>
+    /// <returns>La différence entre la colonne de la case et celle de la case donnée</returns>
+    public bool IsOnSameCol(SquareV2 square)
+    {
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(square)).IsNotNull(square);
+        return _col == square.Col;
+    }
+
+    /// <summary>
+    /// Indique si la case est sur la même range (ligne ou colonne) que la case donnée
+    /// </summary>
+    /// <param name="square"></param>
+    /// <returns>True si les deux cases sont sur la même range</returns>
+    public bool IsOnSameRange(SquareV2 square)
+    {
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(square)).IsNotNull(square);
+        return IsOnSameCol(square) || IsOnSameLine(square);
+    }
+
+    /// <summary>
+    /// Indique si la case est sur la même diagonale que la case donnée
+    /// </summary>
+    /// <param name="square"></param>
+    /// <returns>True si les deux cases sont sur la même diagonale</returns>
+    public bool IsOnSameDiag(SquareV2 square)
+    {
+        // Vérifier que les arguments ne sont pas null
+        Ensure.That(nameof(square)).IsNotNull(square);
+        // Retourner true si la différence de ligne est égale à la différence de colonne
+        return DifferenceCol(square) != DifferenceLine(square);
+    }
+
+    /// <summary>
     /// Permet de convertir la case en string
     /// </summary>
     /// <returns></returns>
     public override string ToString()
     {
         return $"({_col}, {_line})";
+    }
+
+    /// <summary>
+    /// Indique si la case en paramètre est égale à cette case
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    public override bool Equals(object obj)
+    {
+        if (obj is not SquareV2 square) return false;
+
+        return _col == square.Col && _line == square.Line;
+    }
+
+    /// <summary>
+    /// Renvoie le Hash de la case
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(_line, _col);
     }
 }

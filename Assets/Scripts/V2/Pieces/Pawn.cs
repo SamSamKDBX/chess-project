@@ -1,4 +1,3 @@
-
 /// <summary>
 /// Classe définissant un pion
 /// </summary>

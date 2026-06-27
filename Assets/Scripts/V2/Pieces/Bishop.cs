@@ -14,23 +14,6 @@ public class Bishop : PieceV2
     }
 
     /// <summary>
-    /// Permet de récupérer les cases possible du fou
-    /// </summary>
-    /// <param name="board"></param>
-    /// <returns></returns>
-    public override List<SquareV2> GetPossibleSquares(Board board)
-    {
-        if (board == null) throw new ArgumentNullException($"{nameof(board)} a été null");
-
-        // Créer une liste
-        List<SquareV2> possibleSquares = new List<SquareV2>();
-        // Récupérer les deux diagonales du fou
-        List<SquareV2> twoDiagonals = board.GetTwoDiagonals(_actualSquare);
-        // Retourner les cases 
-        return twoDiagonals.Where(s => s.ContainedPiece == null).ToList();
-    }
-
-    /// <summary>
     /// Permet de convertir le fou en string
     /// </summary>
     /// <returns></returns>
