@@ -37,7 +37,7 @@ public class StraightMove : IMoveType
             // Récupérer la ligne ou la colonne commune entre les deux cases
             List<SquareV2> commonRange_origin_target = board.GetCommonRange(origin, target);
             // S'il n'y a aucune une pièce sur la voie entre l'origin et la target
-            if (board.AnyPieceBetween(origin, target, commonRange_origin_target))
+            if (Board.AnyPieceBetween(origin, target, commonRange_origin_target))
             {
                 return true;
             }

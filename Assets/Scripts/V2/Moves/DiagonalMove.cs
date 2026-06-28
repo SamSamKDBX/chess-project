@@ -34,19 +34,13 @@ public class DiagonalMove : IMoveType
         SquareV2 origin = pieceToMove.ActualSquare;
         try
         {
-            // Récupérer la diagonale commune aux deux cases parmi toutes les cases du plateau
-            List<SquareV2> diagonal = board.GetCommonDiagonal(origin, target);
-            // S'il n'y a aucune pièce sur la voie entre l'origin et la target
-            if (board.AnyPieceBetween(origin, target, diagonal))
-            {
-                return true;
-            }
+            // S'il n'y a aucune pièce sur la diagonale entre l'origin et la target
+            return Board.AnyPieceBetween(origin, target, board.GetCommonDiagonal(origin, target));
         }
         catch (InvalidOperationException e)
         {
-            // Si les deux cases ne sont pas sur la même diagonale
+            // Si les deux cases ne sont égales ou pas sur la même diagonale
             throw new InvalidMoveException($"Mouvement invalide", e);
         }
-        return true;
     }
 }
