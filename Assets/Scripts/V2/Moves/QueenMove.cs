@@ -28,9 +28,9 @@ public class QueenMove : IMoveType
     public bool IsValidMove(PieceV2 pieceToMove, SquareV2 target, Board board)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(pieceToMove)).IsNotNull(pieceToMove);
-        Ensure.That(nameof(target)).IsNotNull(target);
-        Ensure.That(nameof(board)).IsNotNull(board);
+        if (pieceToMove == null) throw new ArgumentNullException($"Erreur {nameof(pieceToMove)} est null");
+        if (target == null) throw new ArgumentNullException($"Erreur {nameof(target)} est null");
+        if (board == null) throw new ArgumentNullException($"Erreur {nameof(board)} est null");
 
         SquareV2 origin = pieceToMove.ActualSquare;
         try

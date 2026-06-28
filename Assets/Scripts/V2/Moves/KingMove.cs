@@ -27,8 +27,8 @@ public class KingMove : IMoveType
     public bool IsValidMove(PieceV2 pieceToMove, SquareV2 target, Board board)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(pieceToMove)).IsNotNull(pieceToMove);
-        Ensure.That(nameof(target)).IsNotNull(target);
+        if (pieceToMove == null) throw new ArgumentNullException($"Erreur {nameof(pieceToMove)} est null");
+        if (target == null) throw new ArgumentNullException($"Erreur {nameof(target)} est null");
 
         // Si la pièce ne bouge que d'une case
         SquareV2 origin = pieceToMove.ActualSquare;

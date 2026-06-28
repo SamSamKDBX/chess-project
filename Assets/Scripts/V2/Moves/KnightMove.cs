@@ -26,8 +26,8 @@ public class KnightMove : IMoveType
     public bool IsValidMove(PieceV2 pieceToMove, SquareV2 target, Board board)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(pieceToMove)).IsNotNull(pieceToMove);
-        Ensure.That(nameof(target)).IsNotNull(target);
+        if (pieceToMove == null) throw new ArgumentNullException($"Erreur {nameof(pieceToMove)} est null");
+        if (target == null) throw new ArgumentNullException($"Erreur {nameof(target)} est null");
 
         // Si la case target est distante de 1 case en largeur et 2 en longueur ou l'inverse
         SquareV2 origin = pieceToMove.ActualSquare;

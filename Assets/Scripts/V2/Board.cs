@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
 
 /// <summary>
@@ -53,7 +52,7 @@ public class Board
     public bool IsOut(SquareV2 square)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(square)).IsNotNull(square);
+        if (square == null) throw new ArgumentNullException($"Erreur {nameof(square)} est null");
         // Retourner true si la case est en dehors du plateau
         return !_allSquares.Contains(square)
             || square.Col > 7
@@ -75,11 +74,11 @@ public class Board
     public List<SquareV2> GetCommonDiagonal(SquareV2 square1, SquareV2 square2)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(square1)).IsNotNull(square1);
-        Ensure.That(nameof(square2)).IsNotNull(square2);
+        if (square1 == null) throw new ArgumentNullException($"Erreur {nameof(square1)} est null");
+        if (square2 == null) throw new ArgumentNullException($"Erreur {nameof(square2)} est null");
         // Vérifier que les cases sont dans les limites du plateau
-        Ensure.That(nameof(square1)).IsFalse(IsOut(square1));
-        Ensure.That(nameof(square2)).IsFalse(IsOut(square2));
+        if (IsOut(square1)) throw new InvalidOperationException($"Erreur {nameof(square1)} est hors du plateau");
+        if (IsOut(square2)) throw new InvalidOperationException($"Erreur {nameof(square2)} est hors du plateau");
         // Vérifier que les deux cases sont différentes
         if (square1.Equals(square2))
             throw new InvalidOperationException($"{nameof(square1)} est égale à {nameof(square2)}");
@@ -104,11 +103,11 @@ public class Board
     public List<SquareV2> GetCommonRange(SquareV2 square1, SquareV2 square2)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(square1)).IsNotNull(square1);
-        Ensure.That(nameof(square2)).IsNotNull(square2);
+        if (square1 == null) throw new ArgumentNullException($"Erreur {nameof(square1)} est null");
+        if (square2 == null) throw new ArgumentNullException($"Erreur {nameof(square2)} est null");
         // Vérifier que les cases sont dans les limites du plateau
-        Ensure.That(nameof(square1)).IsFalse(IsOut(square1));
-        Ensure.That(nameof(square2)).IsFalse(IsOut(square2));
+        if (IsOut(square1)) throw new InvalidOperationException($"Erreur {nameof(square1)} est hors du plateau");
+        if (IsOut(square2)) throw new InvalidOperationException($"Erreur {nameof(square2)} est hors du plateau");
         // Vérifier que les deux cases sont différentes
         if (square1.Equals(square2))
             throw new InvalidOperationException($"{nameof(square1)} est égale à {nameof(square2)}");
@@ -140,12 +139,12 @@ public class Board
     public static bool AnyPieceBetween(SquareV2 origin, SquareV2 target, List<SquareV2> rangeOrDiag)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(origin)).IsNotNull(origin);
-        Ensure.That(nameof(target)).IsNotNull(target);
-        Ensure.That(nameof(rangeOrDiag)).IsNotNull(rangeOrDiag);
+        if (origin == null) throw new ArgumentNullException($"Erreur {nameof(origin)} est null");
+        if (target == null) throw new ArgumentNullException($"Erreur {nameof(target)} est null");
+        if (rangeOrDiag == null) throw new ArgumentNullException($"Erreur {nameof(rangeOrDiag)} est null");
         // Vérifier que les cases sont dans la range
-        Ensure.That(nameof(origin)).IsTrue(rangeOrDiag.Contains(origin));
-        Ensure.That(nameof(target)).IsTrue(rangeOrDiag.Contains(target));
+        if (!rangeOrDiag.Contains(origin)) throw new InvalidOperationException($"Erreur {nameof(origin)} n'est pas dans {nameof(rangeOrDiag)}");
+        if (!rangeOrDiag.Contains(target)) throw new InvalidOperationException($"Erreur {nameof(target)} n'est pas dans {nameof(rangeOrDiag)}");
 
         // Récupérer les index de origin et target
         int originIndex = rangeOrDiag.IndexOf(origin);
@@ -191,8 +190,8 @@ public class Board
     public bool IsKingInCheckAfterMove(PieceV2 piece, SquareV2 target)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(piece)).IsNotNull(piece);
-        Ensure.That(nameof(target)).IsNotNull(target);
+        if (piece == null) throw new ArgumentNullException($"Erreur {nameof(piece)} est null");
+        if (target == null) throw new ArgumentNullException($"Erreur {nameof(target)} est null");
 
         // Récupérer la pièce actuelle sur target et l'origine
         PieceV2 oldPiece = target.ContainedPiece;
@@ -217,8 +216,8 @@ public class Board
         // Pour chaque case contenant une pièce
         // Checker si la pièce est de la couleur attaquante et si elle menace la target
         return _allSquares.Select(s => s.ContainedPiece)
-                          .NotUnityNull()
-                          .Any(p => p.Color == strikerColor
+                          .Any(p => p != null
+                                && p.Color == strikerColor
                                 && p.MoveType.IsEatingValidMove(p, target, this));
     }
 

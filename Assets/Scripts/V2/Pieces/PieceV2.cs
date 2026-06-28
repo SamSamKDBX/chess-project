@@ -107,7 +107,7 @@ public class PieceV2 : MonoBehaviour
     public void VirtualMove(SquareV2 target)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(target)).IsNotNull(target);
+        if (target == null) throw new ArgumentNullException($"Erreur {nameof(target)} est null");
 
         target.ContainedPiece = this;
         _actualSquare = target;

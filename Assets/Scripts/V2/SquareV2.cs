@@ -87,7 +87,7 @@ public class SquareV2
     public int DifferenceCol(SquareV2 square)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(square)).IsNotNull(square);
+        if (square == null) throw new ArgumentNullException($"Erreur {nameof(square)} est null");
         return Math.Abs(_col - square.Col);
     }
 
@@ -99,7 +99,7 @@ public class SquareV2
     public int DifferenceLine(SquareV2 square)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(square)).IsNotNull(square);
+        if (square == null) throw new ArgumentNullException($"Erreur {nameof(square)} est null");
         return Math.Abs(_line - square.Line);
     }
 
@@ -111,7 +111,7 @@ public class SquareV2
     public bool IsOnSameLine(SquareV2 square)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(square)).IsNotNull(square);
+        if (square == null) throw new ArgumentNullException($"Erreur {nameof(square)} est null");
         return _line == square.Line;
     }
 
@@ -123,7 +123,7 @@ public class SquareV2
     public bool IsOnSameCol(SquareV2 square)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(square)).IsNotNull(square);
+        if (square == null) throw new ArgumentNullException($"Erreur {nameof(square)} est null");
         return _col == square.Col;
     }
 
@@ -135,7 +135,7 @@ public class SquareV2
     public bool IsOnSameRange(SquareV2 square)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(square)).IsNotNull(square);
+        if (square == null) throw new ArgumentNullException($"Erreur {nameof(square)} est null");
         return IsOnSameCol(square) || IsOnSameLine(square);
     }
 
@@ -147,7 +147,7 @@ public class SquareV2
     public bool IsOnSameDiag(SquareV2 square)
     {
         // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(square)).IsNotNull(square);
+        if (square == null) throw new ArgumentNullException($"Erreur {nameof(square)} est null");
         // Retourner true si la différence de ligne est égale à la différence de colonne
         return DifferenceCol(square) != DifferenceLine(square);
     }
