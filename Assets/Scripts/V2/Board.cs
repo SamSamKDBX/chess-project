@@ -9,21 +9,39 @@ using UnityEngine;
 /// </summary>
 public class Board
 {
-    private readonly List<SquareV2> _allSquares;
+    private readonly List<SquareV2> _allSquares = new List<SquareV2>();
 
     public Board()
     {
-        _allSquares = new List<SquareV2>();
-        // Pour chaque ligne
+        // Ajouter au plateau une case pour chaque ligne et chaque colonne 
+        // (les pièces sont rajoutée dans le constructeur de Square)
         for (int line = 0; line < 8; line++)
-        {
-            // Pour chaque colonne
             for (int col = 0; col < 8; col++)
-            {
-                // Ajouter au tableau une case pour cette ligne et cette colonne (les pièces sont rajoutée dans le constructeur)
                 _allSquares.Add(new SquareV2(line, col));
-            }
-        }
+    }
+
+    /// <summary>
+    /// Permet de récupérer la pièce sur le plateau à la case target
+    /// </summary>
+    /// <param name="line"></param>
+    /// <param name="col"></param>
+    /// <returns></returns>
+    public PieceV2 GetPiece(SquareV2 target)
+    {
+        return _allSquares.First(s => s.Equals(target)).ContainedPiece;
+    }
+
+    /// <summary>
+    /// Permet de placer une pièce sur le plateau à la case target
+    /// </summary>
+    /// <param name="piece"></param>
+    /// <param name="target"></param>
+    /// <exception cref="InvalidOperationException"></exception>
+    public void PutPiece(PieceV2 piece, SquareV2 target)
+    {
+        if (IsOut(target))
+            throw new InvalidOperationException($"Erreur {nameof(target)} n'est pas sur le plateau");
+        piece.VirtualMove(target);
     }
 
     /// <summary>
@@ -37,23 +55,11 @@ public class Board
         // Vérifier que les arguments ne sont pas null
         Ensure.That(nameof(square)).IsNotNull(square);
         // Retourner true si la case est en dehors du plateau
-        return !_allSquares.Contains(square) || square.Col > 7 || square.Col < 0 || square.Line > 7 || square.Line < 0;
-    }
-
-    /// <summary>
-    /// Retourne les deux diagonales de la case en paramètre
-    /// </summary>
-    /// <param name="square"></param>
-    /// <returns>Une liste contenant les cases des deux diagonales de la case en paramètre</returns>
-    public List<SquareV2> GetTwoDiagonals(SquareV2 square)
-    {
-        // Vérifier que les arguments ne sont pas null
-        Ensure.That(nameof(square)).IsNotNull(square);
-
-        return _allSquares.Where(s => s.DifferenceCol(square) == s.DifferenceLine(square))
-                          .OrderBy(s => s.Col)
-                          .ThenBy(s => s.Line)
-                          .ToList();
+        return !_allSquares.Contains(square)
+            || square.Col > 7
+            || square.Col < 0
+            || square.Line > 7
+            || square.Line < 0;
     }
 
     /// <summary>
@@ -109,25 +115,17 @@ public class Board
 
         // Si les deux cases sont sur la même ligne
         if (square1.IsOnSameLine(square2))
-        {
-            // Retourner la ligne
             return _allSquares.Where(s => s.IsOnSameLine(square1))
                               .OrderBy(s => s.Line)
                               .ToList();
-        }
         // Sinon si les deux cases sont sur la même colonne
         else if (square1.IsOnSameCol(square2))
-        {
-            // Retourner la colonne
             return _allSquares.Where(s => s.IsOnSameCol(square1))
                               .OrderBy(s => s.Col)
                               .ToList();
-        }
         else
-        {
             // Sinon si les deux cases ne sont ni sur la même ligne ni sur la même colonne
             throw new InvalidOperationException($"{nameof(square1)} et {nameof(square2)} ne sont pas sur la même ligne ni sur la même colonne");
-        }
     }
 
     /// <summary>
@@ -139,7 +137,7 @@ public class Board
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
-    public bool AnyPieceBetween(SquareV2 origin, SquareV2 target, List<SquareV2> rangeOrDiag)
+    public static bool AnyPieceBetween(SquareV2 origin, SquareV2 target, List<SquareV2> rangeOrDiag)
     {
         // Vérifier que les arguments ne sont pas null
         Ensure.That(nameof(origin)).IsNotNull(origin);
@@ -166,7 +164,7 @@ public class Board
     /// </summary>
     /// <param name="color"></param>
     /// <returns>Le roi de la couleur donnée ou null si pas trouvé</returns>
-    public King GetKing(Colors color)
+    private King GetKing(Colors color)
     {
         return _allSquares.FirstOrDefault(s => s.ContainedPiece is King
                                           && s.ContainedPiece?.Color == color)?.ContainedPiece as King;
@@ -221,7 +219,7 @@ public class Board
         return _allSquares.Select(s => s.ContainedPiece)
                           .NotUnityNull()
                           .Any(p => p.Color == strikerColor
-                                    && p.MoveType.IsEatingValidMove(p, target, this));
+                                && p.MoveType.IsEatingValidMove(p, target, this));
     }
 
     /// <summary>
