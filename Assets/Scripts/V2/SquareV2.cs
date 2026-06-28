@@ -14,7 +14,6 @@ public class SquareV2
     {
         _line = line;
         _col = col;
-        AddStartingPiece();
     }
 
     public SquareV2(SquareV2 otherSquare)
