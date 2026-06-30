@@ -50,7 +50,7 @@ public class SquareV2
     /// <summary>
     /// Permet d'ajouter la pièce de départ à la case (n'ajoute rien si la case doit rester vide)
     /// </summary>
-    private void AddStartingPiece()
+    public void AddStartingPiece()
     {
         Colors color;
 

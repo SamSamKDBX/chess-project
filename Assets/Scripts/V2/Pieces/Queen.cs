@@ -11,6 +11,14 @@ public class Queen : PieceV2
     }
 
     /// <summary>
+    /// Permet d'initialiser les champs d'une pièce
+    /// </summary>
+    public void Initialize(Colors color, SquareV2 originSquare)
+    {
+        base.Initialize(color, originSquare, new QueenMove());
+    }
+
+    /// <summary>
     /// Permet de convertir la reine en string
     /// </summary>
     /// <returns></returns>

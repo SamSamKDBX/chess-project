@@ -6,17 +6,37 @@ using UnityEngine;
 /// <summary>
 /// Classe définissant un plateau d'échec
 /// </summary>
-public class Board
+public class Board : MonoBehaviour
 {
     private readonly List<SquareV2> _allSquares = new List<SquareV2>();
 
     public Board()
     {
-        // Ajouter au plateau une case pour chaque ligne et chaque colonne 
-        // (les pièces sont rajoutée dans le constructeur de Square)
+        Initialize();
+    }
+
+    /// <summary>
+    /// Initialise le plateau avec toutes les cases
+    /// </summary>
+    public void Initialize(bool addPieces = false)
+    {
+        // Vider la liste
+        _allSquares.Clear();
+        // Ajouter au plateau une case pour chaque ligne et chaque colonne
         for (int line = 0; line < 8; line++)
             for (int col = 0; col < 8; col++)
                 _allSquares.Add(new SquareV2(line, col));
+
+        if (addPieces)
+            AddPieces();
+    }
+
+    /// <summary>
+    /// Permet d'ajouter les pièces sur le plateau à leurs position de départ
+    /// </summary>
+    private void AddPieces()
+    {
+        _allSquares.ForEach(s => s.AddStartingPiece());
     }
 
     /// <summary>
@@ -27,6 +47,12 @@ public class Board
     /// <returns></returns>
     public PieceV2 GetPiece(SquareV2 target)
     {
+        // Vérifier que les arguments ne sont pas null
+        if (target == null) throw new ArgumentNullException($"Erreur {nameof(target)} est null");
+        // Vérifier que la target n'est pas out
+        if (IsOut(target))
+            throw new InvalidOperationException($"Erreur {nameof(target)} n'est pas sur le plateau");
+
         return _allSquares.First(s => s.Equals(target)).ContainedPiece;
     }
 
@@ -38,8 +64,13 @@ public class Board
     /// <exception cref="InvalidOperationException"></exception>
     public void PutPiece(PieceV2 piece, SquareV2 target)
     {
+        // Vérifier que les arguments ne sont pas null
+        if (piece == null) throw new ArgumentNullException($"Erreur {nameof(piece)} est null");
+        if (target == null) throw new ArgumentNullException($"Erreur {nameof(target)} est null");
+        // Vérifier que la target n'est pas out
         if (IsOut(target))
             throw new InvalidOperationException($"Erreur {nameof(target)} n'est pas sur le plateau");
+
         piece.VirtualMove(target);
     }
 
@@ -211,7 +242,7 @@ public class Board
     /// </summary>
     /// <param name="color"></param>
     /// <returns></returns>
-    public bool IsAttacked(SquareV2 target, Colors strikerColor)
+    private bool IsAttacked(SquareV2 target, Colors strikerColor)
     {
         // Pour chaque case contenant une pièce
         // Checker si la pièce est de la couleur attaquante et si elle menace la target

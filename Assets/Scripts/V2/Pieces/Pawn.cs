@@ -9,6 +9,14 @@ public class Pawn : PieceV2
     }
 
     /// <summary>
+    /// Permet d'initialiser les champs d'une pièce
+    /// </summary>
+    public void Initialize(Colors color, SquareV2 originSquare)
+    {
+        base.Initialize(color, originSquare, new PawnMove());
+    }
+
+    /// <summary>
     /// Permet de convertir le pion en string
     /// </summary>
     /// <returns></returns>

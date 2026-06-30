@@ -9,13 +9,20 @@ using UnityEngine;
 /// </summary>
 public class PieceV2 : MonoBehaviour
 {
-    protected readonly Colors _color;
+    protected Colors _color;
     protected SquareV2 _actualSquare;
-    private List<SquareV2> _possibleSquares;
-    private readonly IMoveType _moveType;
+    private IMoveType _moveType;
     private bool _hasNeverMoved;
 
     public PieceV2(Colors color, SquareV2 originSquare, IMoveType moveType)
+    {
+        Initialize(color, originSquare, moveType);
+    }
+
+    /// <summary>
+    /// Permet d'initialiser les champs d'une pièce
+    /// </summary>
+    public virtual void Initialize(Colors color, SquareV2 originSquare, IMoveType moveType)
     {
         _color = color;
         _actualSquare = originSquare;

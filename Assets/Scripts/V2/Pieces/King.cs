@@ -9,6 +9,14 @@ public class King : PieceV2
     }
 
     /// <summary>
+    /// Permet d'initialiser les champs d'une pièce
+    /// </summary>
+    public void Initialize(Colors color, SquareV2 originSquare)
+    {
+        base.Initialize(color, originSquare, new KingMove());
+    } 
+
+    /// <summary>
     /// Permet de convertir le roi en string
     /// </summary>
     /// <returns></returns>
