@@ -1,10 +1,6 @@
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
-using UnityEngine.Rendering.Universal.Internal;
-using System;
-using Unity.VisualScripting;
-using System.IO.Pipes;
 
 public class Piece : MonoBehaviour
 {
